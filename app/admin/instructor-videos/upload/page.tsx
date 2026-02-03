@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { uploadVideoToR2 } from "@/lib/uploadVideoToR2";
