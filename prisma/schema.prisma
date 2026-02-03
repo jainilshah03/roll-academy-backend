@@ -1,0 +1,115 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin-arm64"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String?
+  email          String         @unique
+  password       String
+  role           String?
+  emailVerified  DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  gymId          String
+  gymName        String?
+  subscriptions  Subscription[]
+  gym            Gym            @relation(fields: [gymId], references: [id])
+  targetedVideos Video[]        @relation("TargetedUser")
+  videos         Video[]        @relation("UploadedBy")
+
+  @@index([gymId], map: "User_gymId_fkey")
+}
+
+model Gym {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+  users         User[]
+  videos        Video[]
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  userId            String?
+  gymId             String?
+  razorpayOrderId   String   @unique
+  razorpayPaymentId String?
+  status            String   @default("PENDING")
+  createdAt         DateTime @default(now())
+  gym               Gym?     @relation(fields: [gymId], references: [id])
+  user              User?    @relation(fields: [userId], references: [id])
+
+  @@index([gymId], map: "Subscription_gymId_fkey")
+  @@index([userId], map: "Subscription_userId_fkey")
+}
+
+model Video {
+  id           String          @id @default(cuid())
+  title        String
+  description  String?
+  url          String?
+  thumbnail    String?
+  visibility   VideoVisibility @default(PRIVATE)
+  status       VideoStatus     @default(PROCESSING)
+  uploadedById String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  gymId        String?
+  targetedId   String?
+  instructorId String?
+  angles       Json?
+  gym          Gym?            @relation(fields: [gymId], references: [id])
+  instructor   Instructor?     @relation(fields: [instructorId], references: [id])
+  targetedUser User?           @relation("TargetedUser", fields: [targetedId], references: [id])
+  uploadedBy   User?           @relation("UploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([gymId])
+  @@index([targetedId])
+  @@index([uploadedById])
+  @@index([instructorId])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  fileUrl   String?
+  status    MessageStatus @default(NEW)
+  createdAt DateTime      @default(now())
+}
+
+model Instructor {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  bio       String?  @db.Text
+  avatar    String?
+  createdAt DateTime @default(now())
+  videos    Video[]
+}
+
+enum VideoVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  CLOSED
+}
+
+enum VideoStatus {
+  PROCESSING
+  READY
+}

@@ -1,0 +1,66 @@
+# ========================
+# DEPENDENCIES
+# ========================
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ========================
+# BUILD OUTPUTS
+# ========================
+.next
+out
+build
+dist
+coverage
+
+# ========================
+# ENV FILES (SECRETS)
+# ========================
+.env
+.env.*
+*.pem
+
+# ========================
+# UPLOADS / MEDIA (VERY IMPORTANT)
+# ========================
+uploads
+videos
+public/videos
+public/uploads
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.zip
+*.tar
+*.gz
+
+# ========================
+# PRISMA
+# ========================
+prisma/dev.db
+prisma/*.db
+
+# ========================
+# LOGS
+# ========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ========================
+# SYSTEM
+# ========================
+.DS_Store
+
+# ========================
+# VERCEL / OTHER
+# ========================
+.vercel
