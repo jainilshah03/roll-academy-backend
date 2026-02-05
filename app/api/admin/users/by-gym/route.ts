@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
 
-const ALLOWED_ORIGIN = "https://roll.academy"; // change if www.roll.academy
+const ALLOWED_ORIGIN = "https://roll.academy"; // or https://www.roll.academy
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
@@ -17,8 +18,13 @@ export async function OPTIONS() {
 
 export async function GET(req: Request) {
   try {
+    // 🔥 FIX: await headers()
+    const h = await headers();
+
     const token = await getToken({
-      req: req as any,
+      req: {
+        headers: Object.fromEntries(h.entries()),
+      } as any,
       secret: process.env.NEXTAUTH_SECRET,
     });
 
@@ -30,7 +36,7 @@ export async function GET(req: Request) {
       );
     }
 
-    if (token.role !== "ADMIN") {
+    if ((token as any).role !== "ADMIN") {
       return NextResponse.json(
         { message: "Forbidden" },
         { status: 403, headers: corsHeaders }
@@ -63,7 +69,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(users, { headers: corsHeaders });
   } catch (error) {
-    console.error("❌ Users by gym error:", error);
+    console.error("❌ Users fetch error:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
       { status: 500, headers: corsHeaders }
