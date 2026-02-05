@@ -27,12 +27,12 @@ coverage
 *.pem
 
 # ========================
-# UPLOADS / MEDIA (VERY IMPORTANT)
+# UPLOADED FILES (RUNTIME ONLY)
 # ========================
-uploads
-videos
-public/videos
-public/uploads
+/uploads
+/public/uploads
+
+# media file types
 *.mp4
 *.mov
 *.avi
@@ -40,6 +40,7 @@ public/uploads
 *.zip
 *.tar
 *.gz
+
 
 # ========================
 # PRISMA

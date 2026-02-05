@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { prisma } from "@/lib/prisma";
 
+const ALLOWED_ORIGIN = "https://roll.academy"; // change if www.roll.academy
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
+  "Access-Control-Allow-Credentials": "true",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function GET(req: Request) {
   try {
     const token = await getToken({
@@ -11,34 +24,30 @@ export async function GET(req: Request) {
 
     if (!token) {
       console.error("❌ No token found");
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { message: "Unauthorized" },
+        { status: 401, headers: corsHeaders }
+      );
     }
 
     if (token.role !== "ADMIN") {
-      console.error("❌ Not admin:", token.role);
-      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+      return NextResponse.json(
+        { message: "Forbidden" },
+        { status: 403, headers: corsHeaders }
+      );
     }
 
     const { searchParams } = new URL(req.url);
     const gymId = searchParams.get("gymId");
     const gymName = searchParams.get("gymName");
 
-    console.log("🔍 Fetching users - gymId:", gymId, "gymName:", gymName);
-
     if (!gymId && !gymName) {
-      console.log("⚠️ No gymId or gymName provided");
-      return NextResponse.json([]);
+      return NextResponse.json([], { headers: corsHeaders });
     }
 
-    // Build the where clause based on which parameter is provided
     const whereClause: any = {};
-    if (gymId) {
-      whereClause.gymId = gymId;
-    } else if (gymName) {
-      whereClause.gymName = gymName;
-    }
-
-    console.log("📋 Query where clause:", whereClause);
+    if (gymId) whereClause.gymId = gymId;
+    else if (gymName) whereClause.gymName = gymName;
 
     const users = await prisma.user.findMany({
       where: whereClause,
@@ -52,13 +61,12 @@ export async function GET(req: Request) {
       },
     });
 
-    console.log(`✅ Found ${users.length} users`);
-    return NextResponse.json(users);
+    return NextResponse.json(users, { headers: corsHeaders });
   } catch (error) {
     console.error("❌ Users by gym error:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
