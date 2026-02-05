@@ -74,7 +74,8 @@ export default function UploadPage() {
       try {
         setLoadingUsers(true);
         const res = await fetch(
-          `/api/admin/users/by-gym?gymId=${selectedGymId}`
+          `/api/admin/users/by-gym?gymId=${selectedGymId}`,
+          { credentials: "include" } 
         );
         if (!res.ok) throw new Error("Failed to fetch users");
         setUsers(await res.json());
@@ -124,6 +125,7 @@ export default function UploadPage() {
         const res = await fetch("/api/videos/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({
             title: trimmedTitle,
             description,
