@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../../lib/prisma";
 
+const isProd = process.env.NODE_ENV === "production";
+
 const authOptions = {
   providers: [
     CredentialsProvider({
@@ -20,21 +22,17 @@ const authOptions = {
 
         if (!email || !password) return null;
 
-        // 🔍 Find user by email only
         const user = await prisma.user.findUnique({
           where: { email },
         });
 
         if (!user || !user.password) return null;
 
-        // 🔐 Check password
         const isValid = await bcrypt.compare(password, user.password);
         if (!isValid) return null;
 
-        // 🔒 Admin-only access
         if (user.role !== "ADMIN") return null;
 
-        // ✅ Auth success
         return {
           id: user.id,
           email: user.email,
@@ -48,6 +46,20 @@ const authOptions = {
 
   session: {
     strategy: "jwt",
+  },
+
+  cookies: {
+    sessionToken: {
+      name: isProd
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "none",   // 🔥 REQUIRED for cross-domain
+        secure: isProd,    // 🔥 REQUIRED for https in prod
+        path: "/",
+      },
+    },
   },
 
   callbacks: {
