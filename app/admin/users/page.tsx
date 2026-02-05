@@ -38,9 +38,10 @@ export default function AdminUsersPage() {
     setSelectedGym(gym);
     setLoadingUsers(true);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/admin/users/by-gym?gymId=${gymId}`, {
+    const res = await fetch(`/api/admin/users/by-gym?gymId=${gymId}`, {
   credentials: "include",
 });
+
 
     const data = await res.json();
 
