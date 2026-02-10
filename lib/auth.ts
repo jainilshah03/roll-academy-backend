@@ -1,9 +1,9 @@
-import NextAuth from "next-auth";
+import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "@/lib/prisma";
 
-const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -11,8 +11,7 @@ const authOptions = {
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-
-      async authorize(credentials: any) {
+      async authorize(credentials) {
         if (!credentials) return null;
 
         const email = credentials.email?.trim().toLowerCase();
@@ -20,10 +19,7 @@ const authOptions = {
 
         if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
-
+        const user = await prisma.user.findUnique({ where: { email } });
         if (!user || !user.password) return null;
 
         const isValid = await bcrypt.compare(password, user.password);
@@ -41,41 +37,25 @@ const authOptions = {
       },
     }),
   ],
-
-  session: {
-    strategy: "jwt",
-  },
-
-  // ❌ REMOVE custom cookies override (use NextAuth defaults)
-  // cookies: { ... },
-
+  session: { strategy: "jwt" },
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.gymId = user.gymId;
+        (token as any).id = (user as any).id;
+        (token as any).role = (user as any).role;
+        (token as any).gymId = (user as any).gymId;
       }
       return token;
     },
-
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       (session as any).user = {
-        id: token.id,
+        id: (token as any).id,
         email: session.user?.email,
-        role: token.role,
-        gymId: token.gymId,
+        role: (token as any).role,
+        gymId: (token as any).gymId,
       };
       return session;
     },
   },
-
-  pages: {
-    signIn: "/auth/signin",
-  },
-
   secret: process.env.NEXTAUTH_SECRET,
 };
-
-const handler = NextAuth(authOptions as any);
-export { handler as GET, handler as POST };

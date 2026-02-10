@@ -74,9 +74,26 @@ export default function AdminVideosPage() {
 
   /* ================= FETCH USERS BY GYM ================= */
   async function fetchUsersByGym(gymId: string) {
-    const res = await fetch(`/api/admin/users/by-gym?gymId=${gymId}`);
-    if (res.ok) setUsers(await res.json());
+  try {
+    const res = await fetch(`/api/admin/users/by-gym?gymId=${gymId}`, {
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      console.error("Failed to fetch users", await res.text());
+      setUsers([]);
+      return;
+    }
+
+    const data = await res.json();
+    if (Array.isArray(data)) setUsers(data);
+    else setUsers([]);
+  } catch (err) {
+    console.error("Users fetch error:", err);
+    setUsers([]);
   }
+}
+
 
   useEffect(() => {
     fetchVideos();

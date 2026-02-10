@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
+import { authOptions } from "@/lib/auth";
 
-const ALLOWED_ORIGIN = "https://roll.academy"; // or https://www.roll.academy
+const ALLOWED_ORIGIN = "https://www.roll.academy";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
@@ -18,28 +18,12 @@ export async function OPTIONS() {
 
 export async function GET(req: Request) {
   try {
-    // 🔥 FIX: await headers()
-    const h = await headers();
+    const session = await getServerSession(authOptions);
 
-    const token = await getToken({
-      req: {
-        headers: Object.fromEntries(h.entries()),
-      } as any,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    if (!token) {
-      console.error("❌ No token found");
+    if (!session || (session as any).user?.role !== "ADMIN") {
       return NextResponse.json(
         { message: "Unauthorized" },
         { status: 401, headers: corsHeaders }
-      );
-    }
-
-    if ((token as any).role !== "ADMIN") {
-      return NextResponse.json(
-        { message: "Forbidden" },
-        { status: 403, headers: corsHeaders }
       );
     }
 

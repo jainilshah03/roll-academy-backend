@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+const R2_BUCKET = process.env.R2_BUCKET!;
 const R2_PUBLIC_BASE_URL = process.env.R2_PUBLIC_BASE_URL!;
 
 const s3 = new S3Client({
@@ -32,22 +32,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🔒 HARD ENFORCEMENT
     const safeFolder: UploadFolder =
       folder === "instructors" ? "instructors" : "training";
 
     const key = `videos/${safeFolder}/${Date.now()}-${fileName}`;
 
     const command = new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME,
+      Bucket: R2_BUCKET,
       Key: key,
       ContentType: fileType,
     });
 
-    const uploadUrl = await getSignedUrl(s3, command, {
-      expiresIn: 300,
-    });
-
+    const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 300 });
     const publicUrl = `${R2_PUBLIC_BASE_URL}/${key}`;
 
     return NextResponse.json({ uploadUrl, publicUrl });
