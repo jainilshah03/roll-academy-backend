@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import path from "path";
-import { mkdir, writeFile } from "fs/promises";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+export const runtime = "nodejs";
+
+/* ============ R2 CONFIG ============ */
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID!;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
+const R2_BUCKET = process.env.R2_BUCKET!;
+const R2_PUBLIC_BASE_URL = process.env.R2_PUBLIC_BASE_URL!;
+
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,28 +36,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let avatarPath: string | null = null;
+    let avatarUrl: string | null = null;
 
     if (avatarFile) {
       const bytes = await avatarFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const uploadDir = path.join(
-        process.cwd(),
-        "public",
-        "uploads",
-        "instructors"
+      const ext = avatarFile.name.split(".").pop();
+      const key = `avatars/${slug}-${Date.now()}.${ext}`;
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: R2_BUCKET,
+          Key: key,
+          Body: buffer,
+          ContentType: avatarFile.type || "image/jpeg",
+        })
       );
 
-      await mkdir(uploadDir, { recursive: true });
-
-      const filename = `${slug}-${Date.now()}${path.extname(
-        avatarFile.name
-      )}`;
-
-      await writeFile(path.join(uploadDir, filename), buffer);
-
-      avatarPath = `/uploads/instructors/${filename}`;
+      avatarUrl = `${R2_PUBLIC_BASE_URL}/${key}`;
     }
 
     await prisma.instructor.create({
@@ -48,11 +62,10 @@ export async function POST(req: NextRequest) {
         name,
         slug,
         bio,
-        avatar: avatarPath,
+        avatar: avatarUrl, // ✅ store public R2 URL
       },
     });
 
-    // ✅ IMPORTANT: always return success
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (err) {
     console.error("CREATE INSTRUCTOR ERROR:", err);
